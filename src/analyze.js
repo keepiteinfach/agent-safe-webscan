@@ -220,6 +220,20 @@ function analyzeCors(aux, findings) {
 }
 
 function analyzeProbe(probe, findings) {
+  if (probe && probe.checked === false) {
+    add(findings, {
+      id: "probe-incomplete",
+      title: `Exposure check for ${probe.path} could not be completed`,
+      severity: "info",
+      confidence: "high",
+      category: "coverage",
+      standard: null,
+      evidence: `${probe.path} was not reachable (${probe.error ?? "unknown error"}); this path was not assessed`,
+      remediation: "Re-run the scan. An unreachable path is not evidence that the file is absent.",
+      source: "authorized-probe"
+    });
+    return;
+  }
   if (!probe?.matched) return;
   add(findings, {
     id: probe.id,

@@ -67,3 +67,17 @@ test("a session keyword past the display-label cut still classifies as sensitive
   assert.equal(httpOnly.severity, "medium");
   assert.equal(report.findings.find((f) => f.id === "cookie-missing-secure").severity, "medium");
 });
+
+test("non-ASCII cookie names survive the display label, hostile characters do not", () => {
+  const report = scan(["süßsession=a; Path=/"]);
+  const finding = report.findings.find((f) => f.id === "cookie-missing-httponly");
+  assert.ok(finding, "a session cookie with non-ASCII characters must still classify as sensitive");
+  assert.match(finding.title, /süßsession/, "a stripped name would report a cookie the server does not have");
+
+  // Headers.append only accepts Latin-1, so zero-width and bidi controls cannot
+  // reach this path via a real response at all; what can is quotes and markup.
+  const hostile = scan(['a" onload="<img>=1; Path=/']);
+  for (const f of hostile.findings.filter((f) => f.id.startsWith("cookie"))) {
+    assert.doesNotMatch(f.title, /["<>]/, `unsanitised name in ${f.id}`);
+  }
+});

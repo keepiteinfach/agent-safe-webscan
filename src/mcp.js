@@ -33,6 +33,13 @@ export const reportSchema = z.object({
     llmsTxt: z.object({ present: z.boolean(), checked: z.boolean(), status: z.number().nullable() }),
     mcpReferences: z.array(z.string())
   }),
+  coverage: z.object({
+    mode: z.enum(["passive", "authorized"]),
+    probesRun: z.number(),
+    probesTotal: z.number(),
+    incomplete: z.array(z.object({ id: z.string(), path: z.string(), error: z.string().nullable() })),
+    responseTruncated: z.boolean()
+  }).optional(),
   safety: z.object({
     rawUntrustedInstructionsReturned: z.boolean(),
     untrustedEvidenceQuarantined: z.boolean(),

@@ -27,3 +27,13 @@ Inventory objects (`securityTxt`, `aiSurface.llmsTxt`) carry three fields:
 
 A network error is reported as `checked: false`, not as `present: false`: an
 unreachable target is not evidence of absence.
+
+`coverage` records what the scan actually managed to assess:
+- `probesRun` / `probesTotal` — authorized exposure probes that completed.
+- `incomplete` — probes that never reached the target, with the reason.
+- `responseTruncated` — whether the main response hit the byte cap.
+
+An exposure probe that could not be completed also emits an `info` finding
+(`probe-incomplete`). Without it, a transient connection reset during an
+authorized scan would leave a clean-looking report for a path that was never
+actually checked.

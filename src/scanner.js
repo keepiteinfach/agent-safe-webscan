@@ -88,6 +88,11 @@ async function runAuthorizedProbes(baseUrl) {
       standard: probe.standard,
       remediation: probe.remediation,
       status: reachable ? res.status : null,
+      // A probe that never completed is not evidence of absence. Keeping the
+      // distinction is what stops a transient RST from silently turning a
+      // critical exposure check into a clean bill of health.
+      checked: reachable,
+      error: reachable ? null : res?.error ?? "probe did not complete",
       matched: Boolean(reachable && res.status >= 200 && res.status < 300 && probe.fingerprint(text)),
       fingerprint: probe.fingerprintName
     });
@@ -112,6 +117,7 @@ export async function scanSite(input, options = {}) {
   ]);
 
   const probes = mode === "authorized" ? await runAuthorizedProbes(final) : [];
+  const incompleteProbes = probes.filter((p) => !p.checked);
   const securityTxtInfo = inventory(securityTxt, (text) => /\bContact\s*:/i.test(text));
   const llmsTxtInfo = inventory(llmsTxt, (text) => text.trim().length > 0 && !/<html[\s>]/i.test(text));
   const mcpHints = [...main.text.matchAll(/(?:href|src)=["']([^"']*(?:\/mcp\b|modelcontextprotocol)[^"']*)["']/gi)]
@@ -143,6 +149,13 @@ export async function scanSite(input, options = {}) {
     ...report,
     timing: { durationMs: main.durationMs },
     response: { bytesInspected: main.bytes, truncated: main.truncated },
+    coverage: {
+      mode,
+      probesRun: probes.length - incompleteProbes.length,
+      probesTotal: probes.length,
+      incomplete: incompleteProbes.map((p) => ({ id: p.id, path: p.path, error: p.error })),
+      responseTruncated: main.truncated
+    },
     note: mode === "authorized"
       ? "Authorized mode uses a small, fixed set of GET probes. Run it only against systems you own or are authorized to test."
       : "Passive mode is the default. It avoids exploit payloads, authentication attacks, brute force, port scans, and subdomain enumeration."
@@ -158,6 +171,7 @@ export function mcpSafeReport(report) {
     technologies: report.technologies,
     securityTxt: report.securityTxt,
     aiSurface: report.aiSurface,
+    coverage: report.coverage,
     safety: report.safety,
     findings: report.findings.map((f) => ({
       id: f.id,

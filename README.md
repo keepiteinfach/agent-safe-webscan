@@ -14,6 +14,7 @@ AgentSafe WebScan therefore adds two agent-native controls:
 
 - **Quarantined evidence:** suspicious hidden instructions are classified and SHA-256 fingerprinted, not returned verbatim to the model. Potential `.env`/debug-log contents are also never emitted.
 - **MCP-native structured findings:** agents receive bounded fields (`severity`, `confidence`, `standard`, `evidence`, `remediation`) plus read-only/idempotent/open-world tool annotations instead of an arbitrary page dump.
+- **Honest coverage:** the report separates "checked and clean" from "could not check". An agent acting on the result can tell the difference.
 
 It also includes SSRF guards, redirect re-validation and DNS pinning, response-size caps, timeouts, and passive-by-default behavior.
 
@@ -114,6 +115,9 @@ https://example.com/ · HTTP 200 · score 72/100 (C)
 - Exposure checks are opt-in via `--authorized`.
 - `.env`/debug responses are fingerprinted but contents are never included in findings.
 - Hidden agent-directed instructions are hashed rather than returned raw over MCP.
+- A check that could not be completed is reported as such. An unreachable path is never
+  presented to the agent as a clean result — see the `coverage` object and the
+  `probe-incomplete` finding.
 
 See [`docs/threat-model.md`](docs/threat-model.md) for the compact threat model.
 

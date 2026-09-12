@@ -113,8 +113,7 @@ const MAX_ADDRESS_ATTEMPTS = 3;
 // Combines the scan deadline with any signal the caller passed in, so an
 // externally cancelled request is not silently ignored.
 function combineSignals(deadline, external) {
-  if (!external) return deadline;
-  return typeof AbortSignal.any === "function" ? AbortSignal.any([deadline, external]) : deadline;
+  return external ? AbortSignal.any([deadline, external]) : deadline;
 }
 
 // Every address in `resolved` has already passed the public-IP check. Trying
@@ -136,7 +135,12 @@ async function requestPinned(url, resolved, options) {
       lastError = error;
     }
   }
-  throw lastError ?? new Error(`No usable address for ${url.hostname}`);
+  if (lastError) throw lastError;
+  // Reaching here without an attempt means the shared deadline ran out before
+  // the first connect. Saying "no usable address" would blame DNS for a
+  // timeout.
+  if (signal.aborted) throw new Error(`Timed out before connecting to ${url.hostname}`);
+  throw new Error(`No usable address for ${url.hostname}`);
 }
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
@@ -169,7 +173,7 @@ export async function safeFetch(input, options = {}) {
   const deadline = AbortSignal.timeout(options.timeoutMs ?? 8_000);
 
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
-    const resolved = await resolvePublicHostname(current.hostname, { signal: deadline });
+    const resolved = await resolvePublicHostname(current.hostname, { signal: combineSignals(deadline, options.signal) });
     const response = await requestPinned(current, resolved, { ...options, method, deadline });
 
     const target = nextRedirectTarget(response.status, response.headers.get("location"), current);

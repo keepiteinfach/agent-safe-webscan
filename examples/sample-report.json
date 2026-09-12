@@ -35,6 +35,13 @@
     },
     "mcpReferences": []
   },
+  "coverage": {
+    "mode": "passive",
+    "probesRun": 0,
+    "probesTotal": 0,
+    "incomplete": [],
+    "responseTruncated": false
+  },
   "safety": {
     "rawUntrustedInstructionsReturned": false,
     "untrustedEvidenceQuarantined": true,

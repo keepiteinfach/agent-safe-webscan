@@ -40,16 +40,26 @@ test("redirects to non-HTTP schemes are refused", () => {
   assert.throws(() => nextRedirectTarget(302, "gopher://example.com/", base), /Refusing redirect/);
 });
 
-test("the timeout budget covers the whole call, not each hop or address", async () => {
-  // Regression for two separate multipliers: one AbortSignal per address
-  // attempt, and one per redirect hop. github.com redirects, and its hostname
-  // resolves to more than one address.
+// The SSRF guard refuses loopback by design, so this budget check cannot use a
+// local server and needs a real multi-address, redirecting host. It must not
+// pass for the wrong reason on a runner without egress, so the rejection is
+// asserted to be a timeout and the test skips when DNS is unavailable.
+const networkProbe = await resolvePublicHostname("github.com").then(() => null, (error) => error.message);
+
+test("the timeout budget covers the whole call, not each hop or address", { skip: networkProbe ? `no network: ${networkProbe}` : false }, async () => {
   const budgetMs = 120;
   const started = Date.now();
-  await assert.rejects(() => safeFetch("http://github.com", { timeoutMs: budgetMs }));
+  await assert.rejects(
+    () => safeFetch("http://github.com", { timeoutMs: budgetMs }),
+    (error) => {
+      // Anything else (DNS failure, connection refused) would make this test
+      // green without exercising the deadline at all.
+      assert.match(error.message, /abort|Timed out/i, `expected a timeout, got: ${error.message}`);
+      return true;
+    }
+  );
   const elapsed = Date.now() - started;
-  // Generous ceiling: the point is that it is a small multiple of the budget,
-  // not 6 hops x 3 addresses x budget.
+  // The point is a small multiple of the budget, not 6 hops x 3 addresses.
   assert.ok(elapsed < budgetMs * 6, `took ${elapsed}ms on a ${budgetMs}ms budget`);
 });
 
