@@ -25,12 +25,11 @@ function toHeaders(nodeHeaders) {
   return out;
 }
 
-function requestPinned(url, resolved, options) {
+function requestOnePinned(url, selected, options) {
   const transport = url.protocol === "https:" ? https : http;
   const method = options.method ?? "GET";
   const maxBytes = options.maxBytes ?? 512_000;
   const timeoutMs = options.timeoutMs ?? 8_000;
-  const selected = resolved[0];
   const signal = AbortSignal.timeout(timeoutMs);
 
   return new Promise((resolve, reject) => {
@@ -109,6 +108,40 @@ function requestPinned(url, resolved, options) {
   });
 }
 
+// Every address in `resolved` has already passed the public-IP check. Trying
+// them in order keeps multi-homed hosts reachable when the first record is
+// unhealthy, without ever widening what the SSRF guard allowed.
+async function requestPinned(url, resolved, options) {
+  let lastError = null;
+  for (const selected of resolved) {
+    try {
+      return await requestOnePinned(url, selected, options);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError ?? new Error(`No usable address for ${url.hostname}`);
+}
+
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+/**
+ * Decides whether a response is a followable redirect and where it points.
+ * Exported so the redirect rules can be tested without network access.
+ *
+ * Returns `null` when the response is terminal — including a 3xx that carries
+ * no Location header, which cannot be followed and is therefore reported like
+ * any other response rather than failing the scan.
+ */
+export function nextRedirectTarget(status, location, current) {
+  if (!REDIRECT_STATUSES.has(status) || !location) return null;
+  const target = new URL(location, current);
+  if (!["http:", "https:"].includes(target.protocol)) {
+    throw new Error(`Refusing redirect to ${target.protocol}`);
+  }
+  return target;
+}
+
 export async function safeFetch(input, options = {}) {
   let current = normalizeUrl(input);
   const method = options.method ?? "GET";
@@ -119,12 +152,10 @@ export async function safeFetch(input, options = {}) {
     const resolved = await resolvePublicHostname(current.hostname);
     const response = await requestPinned(current, resolved, { ...options, method });
 
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const location = response.headers.get("location");
-      if (!location) break;
+    const target = nextRedirectTarget(response.status, response.headers.get("location"), current);
+    if (target) {
       if (hop === maxRedirects) throw new Error(`Too many redirects (>${maxRedirects})`);
-      current = new URL(location, current);
-      if (!["http:", "https:"].includes(current.protocol)) throw new Error(`Refusing redirect to ${current.protocol}`);
+      current = target;
       continue;
     }
 
@@ -140,5 +171,5 @@ export async function safeFetch(input, options = {}) {
       network: { dnsPinned: true, resolvedAddressFamily: resolved[0]?.family ?? null }
     };
   }
-  throw new Error("Redirect handling failed");
+  throw new Error(`Too many redirects (>${maxRedirects})`);
 }

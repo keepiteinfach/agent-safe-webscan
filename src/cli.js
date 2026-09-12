@@ -18,20 +18,40 @@ Safety:
   and should only be used on systems you own or are explicitly authorized to test.`);
 }
 
+const FORMATS = new Set(["text", "json", "sarif"]);
+const THRESHOLDS = new Set(["critical", "high", "medium", "low", "info"]);
+
+function requireValue(args, i, flag) {
+  const value = args[i + 1];
+  if (value === undefined || value.startsWith("--")) throw new Error(`${flag} requires a value`);
+  return value;
+}
+
 function parse(argv) {
   const args = [...argv];
   if (!args.length || args.includes("--help") || args.includes("-h")) return { help: true };
-  const url = args.shift();
+
+  let url = null;
   let format = "text";
   let mode = "passive";
   let failOn = null;
+
   for (let i = 0; i < args.length; i += 1) {
-    if (args[i] === "--authorized") mode = "authorized";
-    else if (args[i] === "--format") format = args[++i] ?? "text";
-    else if (args[i] === "--fail-on") failOn = args[++i] ?? null;
-    else throw new Error(`Unknown argument: ${args[i]}`);
+    const arg = args[i];
+    if (arg === "--authorized") mode = "authorized";
+    else if (arg === "--format") format = requireValue(args, i++, "--format").toLowerCase();
+    else if (arg === "--fail-on") failOn = requireValue(args, i++, "--fail-on").toLowerCase();
+    else if (arg.startsWith("--")) throw new Error(`Unknown argument: ${arg}`);
+    else if (url === null) url = arg;
+    else throw new Error(`Unexpected extra argument: ${arg}. Only one URL can be scanned per run.`);
   }
-  if (!new Set(["text", "json", "sarif"]).has(format)) throw new Error(`Unsupported format: ${format}`);
+
+  if (!url) throw new Error("URL is required");
+  if (!FORMATS.has(format)) throw new Error(`Unsupported format: ${format}. Use one of ${[...FORMATS].join(", ")}.`);
+  // A silently ignored threshold would make a CI gate pass by accident.
+  if (failOn !== null && !THRESHOLDS.has(failOn)) {
+    throw new Error(`Unsupported --fail-on threshold: ${failOn}. Use one of ${[...THRESHOLDS].join(", ")}.`);
+  }
   return { url, format, mode, failOn };
 }
 
@@ -66,8 +86,8 @@ try {
   else if (opts.format === "sarif") console.log(JSON.stringify(toSarif(report), null, 2));
   else console.log(textReport(report));
 
-  if (opts.failOn && rank[opts.failOn] !== undefined) {
-    if (report.findings.some((f) => rank[f.severity] >= rank[opts.failOn])) process.exitCode = 2;
+  if (opts.failOn && report.findings.some((f) => rank[f.severity] >= rank[opts.failOn])) {
+    process.exitCode = 2;
   }
 } catch (error) {
   console.error(`AgentSafe WebScan error: ${error instanceof Error ? error.message : String(error)}`);
