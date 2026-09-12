@@ -65,24 +65,24 @@
       "source": "response"
     },
     {
-      "id": "cookie-sessionid-httponly",
+      "id": "cookie-missing-httponly",
       "title": "Sensitive-looking cookie 'sessionid' is missing HttpOnly",
       "severity": "medium",
       "confidence": "high",
       "category": "web-security",
       "standard": "CWE-1004",
-      "evidence": "Cookie name appears session/auth related and HttpOnly is absent",
+      "evidence": "Cookie 'sessionid' looks session/auth related and does not set HttpOnly",
       "remediation": "Set HttpOnly unless client-side JavaScript truly needs access.",
       "source": "set-cookie"
     },
     {
-      "id": "cookie-sessionid-secure",
+      "id": "cookie-missing-secure",
       "title": "Cookie 'sessionid' is missing Secure",
       "severity": "medium",
       "confidence": "high",
       "category": "web-security",
       "standard": "CWE-614",
-      "evidence": "Cookie attributes do not include Secure",
+      "evidence": "Cookie 'sessionid' does not set the Secure attribute",
       "remediation": "Set Secure for cookies transmitted over HTTPS.",
       "source": "set-cookie"
     },
@@ -131,13 +131,13 @@
       "source": "response"
     },
     {
-      "id": "cookie-sessionid-samesite",
+      "id": "cookie-missing-samesite",
       "title": "Cookie 'sessionid' has no SameSite attribute",
       "severity": "low",
       "confidence": "high",
       "category": "web-security",
       "standard": "CWE-352",
-      "evidence": "SameSite attribute not present",
+      "evidence": "Cookie 'sessionid' does not set a SameSite attribute",
       "remediation": "Set SameSite=Lax or Strict unless cross-site behavior is required.",
       "source": "set-cookie"
     },

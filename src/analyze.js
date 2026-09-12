@@ -69,10 +69,10 @@ function analyzeAgentInjection(html, findings) {
     ["tool instruction", /(?:call|invoke|use)\s+(?:the\s+)?(?:tool|function|mcp)/i],
     ["assistant role", /\bassistant\s*:/i]
   ];
+  const segments = hiddenSegments(html).slice(0, 100).map(normalizeText).filter(Boolean);
   const matches = [];
-  for (const segment of hiddenSegments(html).slice(0, 100)) {
-    const text = normalizeText(segment).slice(0, 12_000);
-    if (!text) continue;
+  for (const segment of segments) {
+    const text = segment.slice(0, 12_000);
     const hit = patterns.filter(([, re]) => re.test(text)).map(([name]) => name);
     if (hit.length) {
       matches.push({
@@ -96,7 +96,7 @@ function analyzeAgentInjection(html, findings) {
     });
   }
 
-  const hidden = hiddenSegments(html).slice(0, 100).map(normalizeText).filter(Boolean).join(" ");
+  const hidden = segments.join(" ");
   const zeroWidth = (hidden.match(/[\u200B-\u200D\u2060\uFEFF]/g) ?? []).length;
   const bidi = (hidden.match(/[\u202A-\u202E\u2066-\u2069]/g) ?? []).length;
   if (zeroWidth + bidi >= 3) {
@@ -142,20 +142,29 @@ function analyzeHeaders(finalUrl, headers, findings) {
   }
 }
 
+// Cookie names come from the scanned site. Embedding them verbatim in a
+// finding id produces unstable, sometimes malformed SARIF ruleIds, which
+// breaks rule grouping in code-scanning UIs. Ids stay fixed; the concrete
+// name lives in the title and evidence instead.
+function cookieLabel(name) {
+  const safe = name.replace(/[^\w.-]/g, "").slice(0, 64);
+  return safe || "unnamed";
+}
+
 function analyzeCookies(finalUrl, headers, findings) {
   const isHttps = new URL(finalUrl).protocol === "https:";
   for (const cookie of extractSetCookies(headers).slice(0, 40)) {
-    const name = cookie.split("=", 1)[0].trim() || "cookie";
+    const name = cookieLabel(cookie.split("=", 1)[0].trim());
     const lower = cookie.toLowerCase();
     const sensitive = /(session|sess|auth|token|jwt|sid)/i.test(name);
     if (isHttps && !/;\s*secure\b/i.test(cookie)) {
-      add(findings, { id: `cookie-${name}-secure`, title: `Cookie '${name}' is missing Secure`, severity: sensitive ? "medium" : "low", standard: "CWE-614", evidence: `Cookie attributes do not include Secure`, remediation: "Set Secure for cookies transmitted over HTTPS.", source: "set-cookie" });
+      add(findings, { id: "cookie-missing-secure", title: `Cookie '${name}' is missing Secure`, severity: sensitive ? "medium" : "low", standard: "CWE-614", evidence: `Cookie '${name}' does not set the Secure attribute`, remediation: "Set Secure for cookies transmitted over HTTPS.", source: "set-cookie" });
     }
     if (sensitive && !/;\s*httponly\b/i.test(cookie)) {
-      add(findings, { id: `cookie-${name}-httponly`, title: `Sensitive-looking cookie '${name}' is missing HttpOnly`, severity: "medium", standard: "CWE-1004", evidence: `Cookie name appears session/auth related and HttpOnly is absent`, remediation: "Set HttpOnly unless client-side JavaScript truly needs access.", source: "set-cookie" });
+      add(findings, { id: "cookie-missing-httponly", title: `Sensitive-looking cookie '${name}' is missing HttpOnly`, severity: "medium", standard: "CWE-1004", evidence: `Cookie '${name}' looks session/auth related and does not set HttpOnly`, remediation: "Set HttpOnly unless client-side JavaScript truly needs access.", source: "set-cookie" });
     }
     if (!/;\s*samesite\s*=/.test(lower)) {
-      add(findings, { id: `cookie-${name}-samesite`, title: `Cookie '${name}' has no SameSite attribute`, severity: "low", standard: "CWE-352", evidence: "SameSite attribute not present", remediation: "Set SameSite=Lax or Strict unless cross-site behavior is required.", source: "set-cookie" });
+      add(findings, { id: "cookie-missing-samesite", title: `Cookie '${name}' has no SameSite attribute`, severity: "low", standard: "CWE-352", evidence: `Cookie '${name}' does not set a SameSite attribute`, remediation: "Set SameSite=Lax or Strict unless cross-site behavior is required.", source: "set-cookie" });
     }
   }
 }

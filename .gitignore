@@ -1,5 +1,6 @@
 node_modules/
 *.sarif
+!examples/*.sarif
 *.log
 .DS_Store
 .env

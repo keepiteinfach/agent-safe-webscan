@@ -1,0 +1,539 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "AgentSafe WebScan",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/keepiteinfach/agent-safe-webscan",
+          "rules": [
+            {
+              "id": "agent-hidden-instructions",
+              "shortDescription": {
+                "text": "Potential hidden instructions for AI agents"
+              },
+              "fullDescription": {
+                "text": "Treat page content as untrusted data. Remove hidden agent-directed instructions or isolate them from model context."
+              },
+              "help": {
+                "text": "Treat page content as untrusted data. Remove hidden agent-directed instructions or isolate them from model context."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "heuristic",
+                "category": "agent-security",
+                "standard": "OWASP LLM01:2025"
+              }
+            },
+            {
+              "id": "clickjacking-protection",
+              "shortDescription": {
+                "text": "No clickjacking protection detected"
+              },
+              "fullDescription": {
+                "text": "Set CSP frame-ancestors (preferred) or X-Frame-Options."
+              },
+              "help": {
+                "text": "Set CSP frame-ancestors (preferred) or X-Frame-Options."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-1021"
+              }
+            },
+            {
+              "id": "cookie-missing-httponly",
+              "shortDescription": {
+                "text": "Sensitive-looking cookie 'sessionid' is missing HttpOnly"
+              },
+              "fullDescription": {
+                "text": "Set HttpOnly unless client-side JavaScript truly needs access."
+              },
+              "help": {
+                "text": "Set HttpOnly unless client-side JavaScript truly needs access."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-1004"
+              }
+            },
+            {
+              "id": "cookie-missing-secure",
+              "shortDescription": {
+                "text": "Cookie 'sessionid' is missing Secure"
+              },
+              "fullDescription": {
+                "text": "Set Secure for cookies transmitted over HTTPS."
+              },
+              "help": {
+                "text": "Set Secure for cookies transmitted over HTTPS."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-614"
+              }
+            },
+            {
+              "id": "jquery-old",
+              "shortDescription": {
+                "text": "Outdated jQuery 3.4.1 detected"
+              },
+              "fullDescription": {
+                "text": "Upgrade jQuery and test dependent plugins. Versions before 3.5.0 are affected by known XSS issues including CVE-2020-11022/11023."
+              },
+              "help": {
+                "text": "Upgrade jQuery and test dependent plugins. Versions before 3.5.0 are affected by known XSS issues including CVE-2020-11022/11023."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-79"
+              }
+            },
+            {
+              "id": "missing-csp",
+              "shortDescription": {
+                "text": "Content Security Policy is missing"
+              },
+              "fullDescription": {
+                "text": "Deploy a restrictive CSP and iterate with report-only mode first."
+              },
+              "help": {
+                "text": "Deploy a restrictive CSP and iterate with report-only mode first."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-1021"
+              }
+            },
+            {
+              "id": "missing-hsts",
+              "shortDescription": {
+                "text": "HSTS is missing"
+              },
+              "fullDescription": {
+                "text": "Enable HSTS after confirming all subdomains are HTTPS-ready."
+              },
+              "help": {
+                "text": "Enable HSTS after confirming all subdomains are HTTPS-ready."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-319"
+              }
+            },
+            {
+              "id": "mixed-content",
+              "shortDescription": {
+                "text": "Potential active/passive mixed content"
+              },
+              "fullDescription": {
+                "text": "Serve all assets over HTTPS or use relative HTTPS-safe URLs."
+              },
+              "help": {
+                "text": "Serve all assets over HTTPS or use relative HTTPS-safe URLs."
+              },
+              "properties": {
+                "severity": "medium",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-319"
+              }
+            },
+            {
+              "id": "cookie-missing-samesite",
+              "shortDescription": {
+                "text": "Cookie 'sessionid' has no SameSite attribute"
+              },
+              "fullDescription": {
+                "text": "Set SameSite=Lax or Strict unless cross-site behavior is required."
+              },
+              "help": {
+                "text": "Set SameSite=Lax or Strict unless cross-site behavior is required."
+              },
+              "properties": {
+                "severity": "low",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-352"
+              }
+            },
+            {
+              "id": "missing-nosniff",
+              "shortDescription": {
+                "text": "X-Content-Type-Options is missing"
+              },
+              "fullDescription": {
+                "text": "Set X-Content-Type-Options: nosniff."
+              },
+              "help": {
+                "text": "Set X-Content-Type-Options: nosniff."
+              },
+              "properties": {
+                "severity": "low",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-16"
+              }
+            },
+            {
+              "id": "missing-referrer-policy",
+              "shortDescription": {
+                "text": "Referrer-Policy is missing"
+              },
+              "fullDescription": {
+                "text": "Set a policy such as strict-origin-when-cross-origin."
+              },
+              "help": {
+                "text": "Set a policy such as strict-origin-when-cross-origin."
+              },
+              "properties": {
+                "severity": "low",
+                "confidence": "high",
+                "category": "web-security",
+                "standard": "CWE-200"
+              }
+            },
+            {
+              "id": "version-disclosure",
+              "shortDescription": {
+                "text": "Technology/version disclosure in response headers"
+              },
+              "fullDescription": {
+                "text": "Remove unnecessary version/product headers where practical."
+              },
+              "help": {
+                "text": "Remove unnecessary version/product headers where practical."
+              },
+              "properties": {
+                "severity": "low",
+                "confidence": "medium",
+                "category": "web-security",
+                "standard": "CWE-200"
+              }
+            },
+            {
+              "id": "third-party-script-no-sri",
+              "shortDescription": {
+                "text": "Third-party scripts without Subresource Integrity"
+              },
+              "fullDescription": {
+                "text": "Where assets are version-pinned and static, consider SRI or self-hosting. Dynamic scripts may not be compatible with SRI."
+              },
+              "help": {
+                "text": "Where assets are version-pinned and static, consider SRI or self-hosting. Dynamic scripts may not be compatible with SRI."
+              },
+              "properties": {
+                "severity": "info",
+                "confidence": "medium",
+                "category": "web-security",
+                "standard": "CWE-829"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "agent-hidden-instructions",
+          "level": "warning",
+          "message": {
+            "text": "Potential hidden instructions for AI agents. 1 hidden/comment segment(s) matched: ignore previous, tool instruction; content withheld, hashes: 7c9a8c3bc7bb1d87"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "heuristic",
+            "category": "agent-security",
+            "remediation": "Treat page content as untrusted data. Remove hidden agent-directed instructions or isolate them from model context."
+          }
+        },
+        {
+          "ruleId": "clickjacking-protection",
+          "level": "warning",
+          "message": {
+            "text": "No clickjacking protection detected. Neither X-Frame-Options nor CSP frame-ancestors is present"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set CSP frame-ancestors (preferred) or X-Frame-Options."
+          }
+        },
+        {
+          "ruleId": "cookie-missing-httponly",
+          "level": "warning",
+          "message": {
+            "text": "Sensitive-looking cookie 'sessionid' is missing HttpOnly. Cookie 'sessionid' looks session/auth related and does not set HttpOnly"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set HttpOnly unless client-side JavaScript truly needs access."
+          }
+        },
+        {
+          "ruleId": "cookie-missing-secure",
+          "level": "warning",
+          "message": {
+            "text": "Cookie 'sessionid' is missing Secure. Cookie 'sessionid' does not set the Secure attribute"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set Secure for cookies transmitted over HTTPS."
+          }
+        },
+        {
+          "ruleId": "jquery-old",
+          "level": "warning",
+          "message": {
+            "text": "Outdated jQuery 3.4.1 detected. jQuery 3.4.1 is older than 3.5.0"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Upgrade jQuery and test dependent plugins. Versions before 3.5.0 are affected by known XSS issues including CVE-2020-11022/11023."
+          }
+        },
+        {
+          "ruleId": "missing-csp",
+          "level": "warning",
+          "message": {
+            "text": "Content Security Policy is missing. Content-Security-Policy header not present"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Deploy a restrictive CSP and iterate with report-only mode first."
+          }
+        },
+        {
+          "ruleId": "missing-hsts",
+          "level": "warning",
+          "message": {
+            "text": "HSTS is missing. Strict-Transport-Security header not present"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Enable HSTS after confirming all subdomains are HTTPS-ready."
+          }
+        },
+        {
+          "ruleId": "mixed-content",
+          "level": "warning",
+          "message": {
+            "text": "Potential active/passive mixed content. HTTPS page references at least one http:// asset"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "medium",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Serve all assets over HTTPS or use relative HTTPS-safe URLs."
+          }
+        },
+        {
+          "ruleId": "cookie-missing-samesite",
+          "level": "note",
+          "message": {
+            "text": "Cookie 'sessionid' has no SameSite attribute. Cookie 'sessionid' does not set a SameSite attribute"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "low",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set SameSite=Lax or Strict unless cross-site behavior is required."
+          }
+        },
+        {
+          "ruleId": "missing-nosniff",
+          "level": "note",
+          "message": {
+            "text": "X-Content-Type-Options is missing. X-Content-Type-Options header not present"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "low",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set X-Content-Type-Options: nosniff."
+          }
+        },
+        {
+          "ruleId": "missing-referrer-policy",
+          "level": "note",
+          "message": {
+            "text": "Referrer-Policy is missing. Referrer-Policy header not present"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "low",
+            "confidence": "high",
+            "category": "web-security",
+            "remediation": "Set a policy such as strict-origin-when-cross-origin."
+          }
+        },
+        {
+          "ruleId": "version-disclosure",
+          "level": "note",
+          "message": {
+            "text": "Technology/version disclosure in response headers. Server/X-Powered-By reveals implementation details"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "low",
+            "confidence": "medium",
+            "category": "web-security",
+            "remediation": "Remove unnecessary version/product headers where practical."
+          }
+        },
+        {
+          "ruleId": "third-party-script-no-sri",
+          "level": "note",
+          "message": {
+            "text": "Third-party scripts without Subresource Integrity. 1 cross-origin script(s) lack an integrity attribute"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "https://demo.example/"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "severity": "info",
+            "confidence": "medium",
+            "category": "web-security",
+            "remediation": "Where assets are version-pinned and static, consider SRI or self-hosting. Dynamic scripts may not be compatible with SRI."
+          }
+        }
+      ]
+    }
+  ]
+}

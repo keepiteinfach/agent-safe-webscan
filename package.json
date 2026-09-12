@@ -28,7 +28,7 @@
     "scan": "node ./src/cli.js",
     "mcp": "node ./src/mcp.js",
     "test": "node --test",
-    "check": "node --check src/cli.js && node --check src/scanner.js && node --check src/analyze.js && node --check src/mcp.js"
+    "check": "for f in src/*.js; do node --check \"$f\" || exit 1; done"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",
