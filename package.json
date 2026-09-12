@@ -1,0 +1,49 @@
+{
+  "name": "agent-safe-webscan",
+  "version": "0.1.0",
+  "description": "Agent-safe passive web security scanner with MCP 2026 support and SARIF output",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentwebscan": "./src/cli.js"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keepiteinfach/agent-safe-webscan.git"
+  },
+  "bugs": {
+    "url": "https://github.com/keepiteinfach/agent-safe-webscan/issues"
+  },
+  "homepage": "https://github.com/keepiteinfach/agent-safe-webscan#readme",
+  "scripts": {
+    "scan": "node ./src/cli.js",
+    "mcp": "node ./src/mcp.js",
+    "test": "node --test",
+    "check": "node --check src/cli.js && node --check src/scanner.js && node --check src/analyze.js && node --check src/mcp.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.2.0"
+  },
+  "keywords": [
+    "security",
+    "website-security",
+    "mcp",
+    "model-context-protocol",
+    "sarif",
+    "ssrf",
+    "prompt-injection",
+    "security-scanner",
+    "codex",
+    "agent-security"
+  ]
+}

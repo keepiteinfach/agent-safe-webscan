@@ -1,0 +1,189 @@
+{
+  "schemaVersion": "0.1",
+  "scanner": {
+    "name": "AgentSafe WebScan",
+    "version": "0.1.0",
+    "mode": "passive"
+  },
+  "target": {
+    "requestedUrl": "https://demo.example/",
+    "finalUrl": "https://demo.example/",
+    "status": 200
+  },
+  "summary": {
+    "score": 4,
+    "grade": "F",
+    "counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 8,
+      "low": 4,
+      "info": 1
+    }
+  },
+  "technologies": [],
+  "securityTxt": {
+    "present": false,
+    "status": 404
+  },
+  "aiSurface": {
+    "llmsTxt": {
+      "present": false,
+      "status": 404
+    },
+    "mcpReferences": []
+  },
+  "safety": {
+    "rawUntrustedInstructionsReturned": false,
+    "untrustedEvidenceQuarantined": true,
+    "ssrfGuard": true,
+    "dnsPinned": true,
+    "activeExploitation": false,
+    "authenticatedTesting": false
+  },
+  "findings": [
+    {
+      "id": "agent-hidden-instructions",
+      "title": "Potential hidden instructions for AI agents",
+      "severity": "medium",
+      "confidence": "heuristic",
+      "category": "agent-security",
+      "standard": "OWASP LLM01:2025",
+      "evidence": "1 hidden/comment segment(s) matched: ignore previous, tool instruction; content withheld, hashes: 7c9a8c3bc7bb1d87",
+      "remediation": "Treat page content as untrusted data. Remove hidden agent-directed instructions or isolate them from model context.",
+      "source": "html-heuristic"
+    },
+    {
+      "id": "clickjacking-protection",
+      "title": "No clickjacking protection detected",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-1021",
+      "evidence": "Neither X-Frame-Options nor CSP frame-ancestors is present",
+      "remediation": "Set CSP frame-ancestors (preferred) or X-Frame-Options.",
+      "source": "response"
+    },
+    {
+      "id": "cookie-sessionid-httponly",
+      "title": "Sensitive-looking cookie 'sessionid' is missing HttpOnly",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-1004",
+      "evidence": "Cookie name appears session/auth related and HttpOnly is absent",
+      "remediation": "Set HttpOnly unless client-side JavaScript truly needs access.",
+      "source": "set-cookie"
+    },
+    {
+      "id": "cookie-sessionid-secure",
+      "title": "Cookie 'sessionid' is missing Secure",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-614",
+      "evidence": "Cookie attributes do not include Secure",
+      "remediation": "Set Secure for cookies transmitted over HTTPS.",
+      "source": "set-cookie"
+    },
+    {
+      "id": "jquery-old",
+      "title": "Outdated jQuery 3.4.1 detected",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-79",
+      "evidence": "jQuery 3.4.1 is older than 3.5.0",
+      "remediation": "Upgrade jQuery and test dependent plugins. Versions before 3.5.0 are affected by known XSS issues including CVE-2020-11022/11023.",
+      "source": "html-fingerprint"
+    },
+    {
+      "id": "missing-csp",
+      "title": "Content Security Policy is missing",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-1021",
+      "evidence": "Content-Security-Policy header not present",
+      "remediation": "Deploy a restrictive CSP and iterate with report-only mode first.",
+      "source": "response"
+    },
+    {
+      "id": "missing-hsts",
+      "title": "HSTS is missing",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-319",
+      "evidence": "Strict-Transport-Security header not present",
+      "remediation": "Enable HSTS after confirming all subdomains are HTTPS-ready.",
+      "source": "response"
+    },
+    {
+      "id": "mixed-content",
+      "title": "Potential active/passive mixed content",
+      "severity": "medium",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-319",
+      "evidence": "HTTPS page references at least one http:// asset",
+      "remediation": "Serve all assets over HTTPS or use relative HTTPS-safe URLs.",
+      "source": "response"
+    },
+    {
+      "id": "cookie-sessionid-samesite",
+      "title": "Cookie 'sessionid' has no SameSite attribute",
+      "severity": "low",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-352",
+      "evidence": "SameSite attribute not present",
+      "remediation": "Set SameSite=Lax or Strict unless cross-site behavior is required.",
+      "source": "set-cookie"
+    },
+    {
+      "id": "missing-nosniff",
+      "title": "X-Content-Type-Options is missing",
+      "severity": "low",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-16",
+      "evidence": "X-Content-Type-Options header not present",
+      "remediation": "Set X-Content-Type-Options: nosniff.",
+      "source": "response"
+    },
+    {
+      "id": "missing-referrer-policy",
+      "title": "Referrer-Policy is missing",
+      "severity": "low",
+      "confidence": "high",
+      "category": "web-security",
+      "standard": "CWE-200",
+      "evidence": "Referrer-Policy header not present",
+      "remediation": "Set a policy such as strict-origin-when-cross-origin.",
+      "source": "response"
+    },
+    {
+      "id": "version-disclosure",
+      "title": "Technology/version disclosure in response headers",
+      "severity": "low",
+      "confidence": "medium",
+      "category": "web-security",
+      "standard": "CWE-200",
+      "evidence": "Server/X-Powered-By reveals implementation details",
+      "remediation": "Remove unnecessary version/product headers where practical.",
+      "source": "response"
+    },
+    {
+      "id": "third-party-script-no-sri",
+      "title": "Third-party scripts without Subresource Integrity",
+      "severity": "info",
+      "confidence": "medium",
+      "category": "web-security",
+      "standard": "CWE-829",
+      "evidence": "1 cross-origin script(s) lack an integrity attribute",
+      "remediation": "Where assets are version-pinned and static, consider SRI or self-hosting. Dynamic scripts may not be compatible with SRI.",
+      "source": "response"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+name: Rule / feature proposal
+about: Propose a bounded, defensive check or integration
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: Problem
+      description: What defensive problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed signal
+      description: Describe the evidence, false-positive risks, and why it can be collected safely.
+    validations:
+      required: true
+  - type: checkboxes
+    attributes:
+      label: Safety
+      options:
+        - label: This proposal does not require credential attacks, brute force, exploit payloads, stealth/evasion, or private-network access.
+          required: true

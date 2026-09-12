@@ -1,0 +1,27 @@
+name: Bug report
+about: Report a reproducible scanner problem or false positive
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Please include the rule ID and a minimal reproduction. Redact secrets and personal data.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Scan mode
+      options: [passive, authorized, analyzer-only]
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
