@@ -1,5 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { pathToFileURL, fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 import * as z from "zod/v4";
 import { scanSite, mcpSafeReport } from "./scanner.js";
 
@@ -16,7 +18,7 @@ const findingSchema = z.object({
   remediation: z.string()
 });
 
-const reportSchema = z.object({
+export const reportSchema = z.object({
   schemaVersion: z.string(),
   scanner: z.object({ name: z.string(), version: z.string(), mode: z.enum(["passive", "authorized"]) }),
   target: z.object({ requestedUrl: z.string(), finalUrl: z.string(), status: z.number() }),
@@ -42,7 +44,7 @@ const reportSchema = z.object({
   findings: z.array(findingSchema)
 });
 
-const policySchema = z.object({
+export const policySchema = z.object({
   defaultMode: z.string(),
   activeExploitation: z.boolean(),
   bruteForce: z.boolean(),
@@ -128,7 +130,23 @@ export function buildServer() {
 
 // `serveStdio` returns a handle synchronously; it is not a promise.
 // Out-of-band transport errors arrive through `onerror`.
-if (import.meta.url === `file://${process.argv[1]}`) {
+//
+// Both sides must be normalised before comparing. `import.meta.url` is
+// percent-encoded and symlink-resolved; `process.argv[1]` is a raw path. A
+// naive string comparison silently skips the start — exit 0, no output, no
+// error — for npx/npm bin symlinks, any symlinked directory in the path,
+// paths containing spaces, and every path on Windows.
+function isDirectInvocation() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectInvocation()) {
   serveStdio(() => buildServer(), {
     onerror: (error) => {
       console.error(`agent-safe-webscan MCP error: ${error instanceof Error ? error.message : String(error)}`);

@@ -154,9 +154,12 @@ function cookieLabel(name) {
 function analyzeCookies(finalUrl, headers, findings) {
   const isHttps = new URL(finalUrl).protocol === "https:";
   for (const cookie of extractSetCookies(headers).slice(0, 40)) {
-    const name = cookieLabel(cookie.split("=", 1)[0].trim());
+    const rawName = cookie.split("=", 1)[0].trim();
+    const name = cookieLabel(rawName);
     const lower = cookie.toLowerCase();
-    const sensitive = /(session|sess|auth|token|jwt|sid)/i.test(name);
+    // Classify on the raw name: the display label is truncated, and a session
+    // keyword sitting past the cut would otherwise downgrade the finding.
+    const sensitive = /(session|sess|auth|token|jwt|sid)/i.test(rawName);
     if (isHttps && !/;\s*secure\b/i.test(cookie)) {
       add(findings, { id: "cookie-missing-secure", title: `Cookie '${name}' is missing Secure`, severity: sensitive ? "medium" : "low", standard: "CWE-614", evidence: `Cookie '${name}' does not set the Secure attribute`, remediation: "Set Secure for cookies transmitted over HTTPS.", source: "set-cookie" });
     }

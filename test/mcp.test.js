@@ -2,14 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { mkdtempSync, symlinkSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const SERVER = fileURLToPath(new URL("../src/mcp.js", import.meta.url));
 
 // Drives the real stdio entry point. The 0.1.0 prototype shipped an MCP server
 // that threw on startup because nothing ever executed this path in CI.
-function talk(messages, { timeoutMs = 15_000 } = {}) {
+function talk(messages, { timeoutMs = 15_000, server = SERVER } = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [SERVER], { stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(process.execPath, [server], { stdio: ["pipe", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     const timer = setTimeout(() => {
@@ -69,4 +72,36 @@ test("scanner_policy answers without any network request", async () => {
   assert.equal(call.result.isError, undefined);
   assert.equal(call.result.structuredContent.defaultMode, "passive");
   assert.equal(call.result.structuredContent.activeExploitation, false);
+});
+
+// The entrypoint guard decides whether the server starts at all. Comparing
+// import.meta.url to process.argv[1] without resolving both sides makes the
+// process exit 0 in silence whenever a symlink or a space is in the path —
+// which is exactly how npx and npm bin install it.
+test("server starts through symlinks and paths containing spaces", async () => {
+  const root = mkdtempSync(join(tmpdir(), "agentsafe-guard-"));
+  try {
+    const spaced = join(root, "dir with space");
+    mkdirSync(spaced);
+    const fileLink = join(spaced, "mcp-link.js");
+    symlinkSync(SERVER, fileLink);
+
+    const dirLink = join(root, "repo-link");
+    symlinkSync(fileURLToPath(new URL("..", import.meta.url)), dirLink);
+
+    for (const entry of [fileLink, join(dirLink, "src", "mcp.js")]) {
+      const { frames, stderr } = await talk(OPENING, { server: entry });
+      const init = frames.find((f) => f.id === 1);
+      assert.ok(init, `server did not start via ${entry}; stderr: ${stderr}`);
+      assert.equal(init.result.serverInfo.name, "agent-safe-webscan");
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("importing the module does not start a server", async () => {
+  const mod = await import("../src/mcp.js");
+  assert.equal(typeof mod.buildServer, "function");
+  assert.ok(mod.reportSchema, "reportSchema must be exported for schema tests");
 });

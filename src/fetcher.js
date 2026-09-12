@@ -29,8 +29,7 @@ function requestOnePinned(url, selected, options) {
   const transport = url.protocol === "https:" ? https : http;
   const method = options.method ?? "GET";
   const maxBytes = options.maxBytes ?? 512_000;
-  const timeoutMs = options.timeoutMs ?? 8_000;
-  const signal = AbortSignal.timeout(timeoutMs);
+  const signal = options.signal;
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -60,7 +59,7 @@ function requestOnePinned(url, selected, options) {
       const status = res.statusCode ?? 0;
       if (method === "HEAD") {
         res.resume();
-        finish(resolve, { status, headers, text: "", bytes: 0, truncated: false });
+        finish(resolve, { status, headers, text: "", bytes: 0, truncated: false, family: selected.family });
         return;
       }
 
@@ -89,6 +88,7 @@ function requestOnePinned(url, selected, options) {
       const resolveBody = () => finish(resolve, {
         status,
         headers,
+        family: selected.family,
         text: Buffer.concat(chunks, total).toString("utf8"),
         bytes: total,
         truncated
@@ -108,14 +108,24 @@ function requestOnePinned(url, selected, options) {
   });
 }
 
+const MAX_ADDRESS_ATTEMPTS = 3;
+
 // Every address in `resolved` has already passed the public-IP check. Trying
 // them in order keeps multi-homed hosts reachable when the first record is
 // unhealthy, without ever widening what the SSRF guard allowed.
+//
+// All attempts share one deadline and are capped in number, so a host with
+// many blackholed records cannot multiply the caller's timeout budget.
 async function requestPinned(url, resolved, options) {
+  const timeoutMs = options.timeoutMs ?? 8_000;
+  const signal = AbortSignal.timeout(timeoutMs);
+  const candidates = resolved.slice(0, MAX_ADDRESS_ATTEMPTS);
   let lastError = null;
-  for (const selected of resolved) {
+
+  for (const selected of candidates) {
+    if (signal.aborted) break;
     try {
-      return await requestOnePinned(url, selected, options);
+      return await requestOnePinned(url, selected, { ...options, signal });
     } catch (error) {
       lastError = error;
     }
@@ -168,7 +178,7 @@ export async function safeFetch(input, options = {}) {
       bytes: response.bytes,
       truncated: response.truncated,
       durationMs: Date.now() - started,
-      network: { dnsPinned: true, resolvedAddressFamily: resolved[0]?.family ?? null }
+      network: { dnsPinned: true, resolvedAddressFamily: response.family ?? null }
     };
   }
   throw new Error(`Too many redirects (>${maxRedirects})`);

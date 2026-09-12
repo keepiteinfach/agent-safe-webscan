@@ -46,3 +46,13 @@ test("secure flag is only required on https targets", () => {
   const http = analyzeScan({ requestedUrl: "http://x/", finalUrl: "http://x/", status: 200, headers, html: "" });
   assert.equal(http.findings.some((f) => f.id === "cookie-missing-secure"), false);
 });
+
+test("SARIF rule metadata neither quotes a single cookie nor understates severity", () => {
+  // sess=… is medium (HttpOnly), the others low. The shared rule must carry
+  // the worst severity and must not name one arbitrary cookie.
+  const report = scan(["sess=a; Path=/", "other=b; Path=/"]);
+  const sarif = toSarif(report);
+  const secureRule = sarif.runs[0].tool.driver.rules.find((r) => r.id === "cookie-missing-secure");
+  assert.equal(secureRule.properties.severity, "medium");
+  assert.doesNotMatch(secureRule.shortDescription.text, /sess|other/);
+});
