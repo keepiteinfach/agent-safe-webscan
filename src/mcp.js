@@ -3,7 +3,58 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod/v4";
 import { scanSite, mcpSafeReport } from "./scanner.js";
 
-function buildServer() {
+const severityEnum = z.enum(["critical", "high", "medium", "low", "info"]);
+
+const findingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  severity: severityEnum,
+  confidence: z.string(),
+  category: z.string(),
+  standard: z.string().nullable(),
+  evidence: z.string(),
+  remediation: z.string()
+});
+
+const reportSchema = z.object({
+  schemaVersion: z.string(),
+  scanner: z.object({ name: z.string(), version: z.string(), mode: z.enum(["passive", "authorized"]) }),
+  target: z.object({ requestedUrl: z.string(), finalUrl: z.string(), status: z.number() }),
+  summary: z.object({
+    score: z.number(),
+    grade: z.string(),
+    counts: z.record(severityEnum, z.number())
+  }),
+  technologies: z.array(z.string()),
+  securityTxt: z.object({ present: z.boolean(), status: z.number().nullable().optional() }),
+  aiSurface: z.object({
+    llmsTxt: z.object({ present: z.boolean(), status: z.number().nullable().optional() }),
+    mcpReferences: z.array(z.string())
+  }),
+  safety: z.object({
+    rawUntrustedInstructionsReturned: z.boolean(),
+    untrustedEvidenceQuarantined: z.boolean(),
+    ssrfGuard: z.boolean(),
+    dnsPinned: z.boolean(),
+    activeExploitation: z.boolean(),
+    authenticatedTesting: z.boolean()
+  }),
+  findings: z.array(findingSchema)
+});
+
+const policySchema = z.object({
+  defaultMode: z.string(),
+  activeExploitation: z.boolean(),
+  bruteForce: z.boolean(),
+  credentialAttacks: z.boolean(),
+  portScanning: z.boolean(),
+  subdomainBruteforce: z.boolean(),
+  ssrfProtection: z.string(),
+  promptInjectionProtection: z.string(),
+  evidenceBoundary: z.string()
+});
+
+export function buildServer() {
   const server = new McpServer({
     name: "agent-safe-webscan",
     title: "AgentSafe WebScan",
@@ -24,9 +75,10 @@ function buildServer() {
         openWorldHint: true
       },
       inputSchema: z.object({
-        url: z.string().url().describe("Public HTTP(S) URL to scan"),
+        url: z.url().describe("Public HTTP(S) URL to scan"),
         mode: z.enum(["passive", "authorized"]).default("passive")
-      })
+      }),
+      outputSchema: reportSchema
     },
     async ({ url, mode }) => {
       const report = mcpSafeReport(await scanSite(url, { mode }));
@@ -49,7 +101,8 @@ function buildServer() {
         idempotentHint: true,
         openWorldHint: false
       },
-      inputSchema: z.object({})
+      inputSchema: z.object({}),
+      outputSchema: policySchema
     },
     async () => {
       const policy = {
@@ -73,7 +126,12 @@ function buildServer() {
   return server;
 }
 
-serveStdio(() => buildServer()).catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// `serveStdio` returns a handle synchronously; it is not a promise.
+// Out-of-band transport errors arrive through `onerror`.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  serveStdio(() => buildServer(), {
+    onerror: (error) => {
+      console.error(`agent-safe-webscan MCP error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+}
