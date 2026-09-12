@@ -48,7 +48,19 @@ export function isPrivateIp(ip) {
   return true;
 }
 
-export async function resolvePublicHostname(hostname) {
+// node:dns has no AbortSignal support, so the deadline is applied by racing.
+// A hung resolver would otherwise block outside the scan's time budget.
+function withDeadline(promise, signal, label) {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(new Error(`Timed out before ${label}`));
+  return new Promise((resolve, reject) => {
+    const onAbort = () => reject(new Error(`Timed out during ${label}`));
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", onAbort));
+  });
+}
+
+export async function resolvePublicHostname(hostname, { signal } = {}) {
   const host = hostname.toLowerCase().replace(/\.$/, "");
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) {
     throw new Error(`Refusing local/private hostname: ${hostname}`);
@@ -57,7 +69,7 @@ export async function resolvePublicHostname(hostname) {
     if (isPrivateIp(host)) throw new Error(`Refusing private/reserved IP: ${host}`);
     return [{ address: host, family: isIP(host) }];
   }
-  const answers = await lookup(host, { all: true, verbatim: true });
+  const answers = await withDeadline(lookup(host, { all: true, verbatim: true }), signal, `DNS lookup for ${host}`);
   if (!answers.length) throw new Error(`DNS returned no addresses for ${hostname}`);
   for (const answer of answers) {
     if (isPrivateIp(answer.address)) {

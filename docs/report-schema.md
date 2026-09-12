@@ -13,3 +13,17 @@ Core finding fields:
 - `remediation` — actionable fix guidance.
 
 The `safety` object makes scanner guarantees machine-readable, including SSRF protection and evidence quarantine.
+
+Rule ids are stable across targets. Where one rule can fire several times on
+one page — every `cookie-*` rule, for example — the id stays fixed and the
+specific subject is named in `title` and `evidence`. SARIF therefore emits one
+`rule` per id and one `result` per finding, and the rule carries the highest
+severity any of its results reports.
+
+Inventory objects (`securityTxt`, `aiSurface.llmsTxt`) carry three fields:
+- `checked` — whether the probe reached the target at all.
+- `present` — whether the file was found. Only meaningful when `checked` is true.
+- `status` — the HTTP status, or `null` when the probe did not complete.
+
+A network error is reported as `checked: false`, not as `present: false`: an
+unreachable target is not evidence of absence.

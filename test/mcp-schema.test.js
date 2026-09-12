@@ -19,7 +19,7 @@ function sampleReport(mode) {
       status: 200,
       headers,
       html,
-      aux: { mode, securityTxt: { present: true, status: 200 }, aiSurface: { llmsTxt: { present: false, status: 404 }, mcpReferences: ["/mcp"] } }
+      aux: { mode, securityTxt: { present: true, checked: true, status: 200 }, aiSurface: { llmsTxt: { present: false, checked: true, status: 404 }, mcpReferences: ["/mcp"] } }
     }),
     timing: { durationMs: 1 },
     response: { bytesInspected: 1, truncated: false },
@@ -45,4 +45,12 @@ test("mcpSafeReport strips internal fields and never returns raw untrusted text"
   assert.ok(injection, "fixture must trigger the injection heuristic");
   assert.doesNotMatch(injection.evidence, /ignore all previous instructions/i, "raw matched text must stay quarantined");
   assert.match(injection.evidence, /content withheld/);
+});
+
+test("an unreachable well-known file is reported as unchecked, not as absent", () => {
+  const report = analyzeScan({ requestedUrl: "https://x/", finalUrl: "https://x/", status: 200, headers: new Headers(), html: "" });
+  // With no aux data at all the scan established nothing about security.txt.
+  assert.equal(report.securityTxt.checked, false);
+  assert.equal(report.securityTxt.present, false);
+  assert.equal(report.securityTxt.status, null);
 });

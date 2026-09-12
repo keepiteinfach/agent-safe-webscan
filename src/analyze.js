@@ -147,7 +147,10 @@ function analyzeHeaders(finalUrl, headers, findings) {
 // breaks rule grouping in code-scanning UIs. Ids stay fixed; the concrete
 // name lives in the title and evidence instead.
 function cookieLabel(name) {
-  const safe = name.replace(/[^\w.-]/g, "").slice(0, 64);
+  // Unicode-aware: a plain \w strips non-ASCII letters and would display
+  // "suesssession" as "ssession", i.e. a name that is not on the server.
+  // Quotes, angle brackets, control characters and ANSI escapes stay out.
+  const safe = name.replace(/[^\p{L}\p{N}_.-]/gu, "").slice(0, 64);
   return safe || "unnamed";
 }
 
@@ -203,7 +206,7 @@ function analyzeHtml(finalUrl, html, findings) {
 }
 
 function analyzeCors(aux, findings) {
-  if (!aux?.cors) return;
+  if (!aux?.cors || aux.cors.failed) return;
   const acao = header(aux.cors.headers, "access-control-allow-origin");
   const acc = header(aux.cors.headers, "access-control-allow-credentials").toLowerCase() === "true";
   const probeOrigin = aux.probeOrigin;
@@ -257,8 +260,8 @@ export function analyzeScan({ requestedUrl, finalUrl, status, headers, html, aux
       counts: Object.fromEntries(["critical", "high", "medium", "low", "info"].map((s) => [s, findings.filter((f) => f.severity === s).length]))
     },
     technologies: detectTech(html, headers),
-    securityTxt: aux.securityTxt ?? { present: false },
-    aiSurface: aux.aiSurface ?? { llmsTxt: { present: false }, mcpReferences: [] },
+    securityTxt: aux.securityTxt ?? { present: false, checked: false, status: null },
+    aiSurface: aux.aiSurface ?? { llmsTxt: { present: false, checked: false, status: null }, mcpReferences: [] },
     safety: {
       rawUntrustedInstructionsReturned: false,
       untrustedEvidenceQuarantined: true,

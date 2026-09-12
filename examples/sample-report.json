@@ -24,12 +24,14 @@
   "technologies": [],
   "securityTxt": {
     "present": false,
-    "status": 404
+    "status": 404,
+    "checked": true
   },
   "aiSurface": {
     "llmsTxt": {
       "present": false,
-      "status": 404
+      "status": 404,
+      "checked": true
     },
     "mcpReferences": []
   },

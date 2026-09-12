@@ -110,6 +110,13 @@ function requestOnePinned(url, selected, options) {
 
 const MAX_ADDRESS_ATTEMPTS = 3;
 
+// Combines the scan deadline with any signal the caller passed in, so an
+// externally cancelled request is not silently ignored.
+function combineSignals(deadline, external) {
+  if (!external) return deadline;
+  return typeof AbortSignal.any === "function" ? AbortSignal.any([deadline, external]) : deadline;
+}
+
 // Every address in `resolved` has already passed the public-IP check. Trying
 // them in order keeps multi-homed hosts reachable when the first record is
 // unhealthy, without ever widening what the SSRF guard allowed.
@@ -117,8 +124,7 @@ const MAX_ADDRESS_ATTEMPTS = 3;
 // All attempts share one deadline and are capped in number, so a host with
 // many blackholed records cannot multiply the caller's timeout budget.
 async function requestPinned(url, resolved, options) {
-  const timeoutMs = options.timeoutMs ?? 8_000;
-  const signal = AbortSignal.timeout(timeoutMs);
+  const signal = combineSignals(options.deadline, options.signal);
   const candidates = resolved.slice(0, MAX_ADDRESS_ATTEMPTS);
   let lastError = null;
 
@@ -158,9 +164,13 @@ export async function safeFetch(input, options = {}) {
   const maxRedirects = options.maxRedirects ?? 5;
   const started = Date.now();
 
+  // One deadline for the whole call. Creating it per hop let a redirect chain
+  // multiply the caller's budget by the number of hops.
+  const deadline = AbortSignal.timeout(options.timeoutMs ?? 8_000);
+
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
-    const resolved = await resolvePublicHostname(current.hostname);
-    const response = await requestPinned(current, resolved, { ...options, method });
+    const resolved = await resolvePublicHostname(current.hostname, { signal: deadline });
+    const response = await requestPinned(current, resolved, { ...options, method, deadline });
 
     const target = nextRedirectTarget(response.status, response.headers.get("location"), current);
     if (target) {

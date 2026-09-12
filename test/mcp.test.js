@@ -78,7 +78,8 @@ test("scanner_policy answers without any network request", async () => {
 // import.meta.url to process.argv[1] without resolving both sides makes the
 // process exit 0 in silence whenever a symlink or a space is in the path —
 // which is exactly how npx and npm bin install it.
-test("server starts through symlinks and paths containing spaces", async () => {
+// Creating symlinks on Windows needs elevated rights or developer mode.
+test("server starts through symlinks and paths containing spaces", { skip: process.platform === "win32" ? "symlinks need elevation on Windows" : false }, async () => {
   const root = mkdtempSync(join(tmpdir(), "agentsafe-guard-"));
   try {
     const spaced = join(root, "dir with space");

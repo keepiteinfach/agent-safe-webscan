@@ -56,12 +56,20 @@ const AUTHORIZED_PROBES = [
   }
 ];
 
+// Auxiliary probes must never fail the whole scan, but a network error is not
+// the same as a 404: reporting an unreachable /.well-known/security.txt as
+// "absent" states something the scan did not establish.
 async function safeAuxFetch(url, options) {
   try {
     return await safeFetch(url, options);
-  } catch {
-    return null;
+  } catch (error) {
+    return { failed: true, error: error instanceof Error ? error.message : String(error) };
   }
+}
+
+function inventory(res, test) {
+  if (!res || res.failed) return { present: false, checked: false, status: null };
+  return { present: isPresent(res, test), checked: true, status: res.status };
 }
 
 async function runAuthorizedProbes(baseUrl) {
@@ -70,7 +78,8 @@ async function runAuthorizedProbes(baseUrl) {
   for (const probe of AUTHORIZED_PROBES) {
     const url = new URL(probe.path, base.origin).toString();
     const res = await safeAuxFetch(url, { maxBytes: 64_000, timeoutMs: 6_000 });
-    const text = res?.text ?? "";
+    const reachable = res && !res.failed;
+    const text = reachable ? res.text : "";
     out.push({
       id: probe.id,
       path: probe.path,
@@ -78,8 +87,8 @@ async function runAuthorizedProbes(baseUrl) {
       severity: probe.severity,
       standard: probe.standard,
       remediation: probe.remediation,
-      status: res?.status ?? null,
-      matched: Boolean(res && res.status >= 200 && res.status < 300 && probe.fingerprint(text)),
+      status: reachable ? res.status : null,
+      matched: Boolean(reachable && res.status >= 200 && res.status < 300 && probe.fingerprint(text)),
       fingerprint: probe.fingerprintName
     });
   }
@@ -87,7 +96,7 @@ async function runAuthorizedProbes(baseUrl) {
 }
 
 function isPresent(res, test = () => true) {
-  return Boolean(res && res.status >= 200 && res.status < 300 && test(res.text));
+  return Boolean(res && !res.failed && res.status >= 200 && res.status < 300 && test(res.text));
 }
 
 export async function scanSite(input, options = {}) {
@@ -103,8 +112,8 @@ export async function scanSite(input, options = {}) {
   ]);
 
   const probes = mode === "authorized" ? await runAuthorizedProbes(final) : [];
-  const securityTxtPresent = isPresent(securityTxt, (text) => /\bContact\s*:/i.test(text));
-  const llmsTxtPresent = isPresent(llmsTxt, (text) => text.trim().length > 0 && !/<html[\s>]/i.test(text));
+  const securityTxtInfo = inventory(securityTxt, (text) => /\bContact\s*:/i.test(text));
+  const llmsTxtInfo = inventory(llmsTxt, (text) => text.trim().length > 0 && !/<html[\s>]/i.test(text));
   const mcpHints = [...main.text.matchAll(/(?:href|src)=["']([^"']*(?:\/mcp\b|modelcontextprotocol)[^"']*)["']/gi)]
     .slice(0, 5)
     .map((m) => {
@@ -121,9 +130,9 @@ export async function scanSite(input, options = {}) {
       mode,
       cors,
       probeOrigin: PROBE_ORIGIN,
-      securityTxt: { present: securityTxtPresent, status: securityTxt?.status ?? null },
+      securityTxt: securityTxtInfo,
       aiSurface: {
-        llmsTxt: { present: llmsTxtPresent, status: llmsTxt?.status ?? null },
+        llmsTxt: llmsTxtInfo,
         mcpReferences: [...new Set(mcpHints)]
       }
     },

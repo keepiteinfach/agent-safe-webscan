@@ -28,9 +28,9 @@ export const reportSchema = z.object({
     counts: z.record(severityEnum, z.number())
   }),
   technologies: z.array(z.string()),
-  securityTxt: z.object({ present: z.boolean(), status: z.number().nullable().optional() }),
+  securityTxt: z.object({ present: z.boolean(), checked: z.boolean(), status: z.number().nullable() }),
   aiSurface: z.object({
-    llmsTxt: z.object({ present: z.boolean(), status: z.number().nullable().optional() }),
+    llmsTxt: z.object({ present: z.boolean(), checked: z.boolean(), status: z.number().nullable() }),
     mcpReferences: z.array(z.string())
   }),
   safety: z.object({
@@ -139,8 +139,11 @@ export function buildServer() {
 function isDirectInvocation() {
   const entry = process.argv[1];
   if (!entry) return false;
+  // Windows paths are case-insensitive and realpathSync does not normalise the
+  // drive letter, so `c:\...` vs `C:\...` would otherwise miss.
+  const normalise = (p) => (process.platform === "win32" ? p.toLowerCase() : p);
   try {
-    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entry);
+    return normalise(realpathSync(fileURLToPath(import.meta.url))) === normalise(realpathSync(entry));
   } catch {
     return false;
   }

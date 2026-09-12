@@ -56,3 +56,14 @@ test("SARIF rule metadata neither quotes a single cookie nor understates severit
   assert.equal(secureRule.properties.severity, "medium");
   assert.doesNotMatch(secureRule.shortDescription.text, /sess|other/);
 });
+
+test("a session keyword past the display-label cut still classifies as sensitive", () => {
+  // The display label is truncated to 64 chars; classifying on the truncated
+  // value dropped the HttpOnly finding entirely for long WordPress cookies.
+  const long = `wordpress_logged_in_${"a".repeat(60)}_session`;
+  const report = scan([`${long}=x; Path=/`]);
+  const httpOnly = report.findings.find((f) => f.id === "cookie-missing-httponly");
+  assert.ok(httpOnly, "long session cookie must still yield an HttpOnly finding");
+  assert.equal(httpOnly.severity, "medium");
+  assert.equal(report.findings.find((f) => f.id === "cookie-missing-secure").severity, "medium");
+});
