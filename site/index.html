@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentSafe WebScan — a web scanner built for the agent era</title>
+<meta name="description" content="Passive-first website security scanning for humans, CI and coding agents. CLI, SARIF 2.1.0 and MCP — scanned pages are treated as untrusted input, not as model context.">
+<link rel="canonical" href="https://keepiteinfach.github.io/agent-safe-webscan/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AgentSafe WebScan">
+<meta property="og:description" content="Passive-first website security scanning for humans, CI and coding agents. The scanner is an agent trust boundary.">
+<meta property="og:url" content="https://keepiteinfach.github.io/agent-safe-webscan/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%9B%A1%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0b0d10;
+    --bg-raised: #12151a;
+    --bg-sunken: #07090b;
+    --line: #1e242c;
+    --line-bright: #2b333d;
+    --fg: #e8ecf1;
+    --fg-dim: #97a3b2;
+    --fg-faint: #6b7785;
+    --accent: #7dd3a0;
+    --accent-dim: #3f7a58;
+    --warn: #e0b45f;
+    --crit: #e07a7a;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+    --measure: 68ch;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { width: min(1040px, 100% - 3rem); margin-inline: auto; }
+  @media (max-width: 560px) { .wrap { width: min(1040px, 100% - 2rem); } }
+
+  a { color: var(--accent); text-decoration-color: var(--accent-dim); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent); }
+
+  code, kbd, pre { font-family: var(--mono); }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(125, 211, 160, 0.09), transparent 70%),
+      var(--bg);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.25rem;
+    font-size: 0.8rem;
+  }
+  .brand {
+    font-family: var(--mono);
+    color: var(--fg);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .topbar nav { display: flex; gap: 1.5rem; }
+  .topbar nav a { color: var(--fg-dim); text-decoration: none; }
+  .topbar nav a:hover { color: var(--fg); }
+  @media (max-width: 620px) { .topbar nav a.opt { display: none; } }
+
+  .hero-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: clamp(2.5rem, 7vh, 5rem);
+    gap: 2.75rem;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.1rem, 6.2vw, 3.9rem);
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+    max-width: 19ch;
+  }
+  h1 .muted { color: var(--fg-faint); }
+
+  .lede {
+    margin: 1.4rem 0 0;
+    max-width: var(--measure);
+    font-size: clamp(1rem, 2.3vw, 1.18rem);
+    color: var(--fg-dim);
+  }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2rem; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.68rem 1.15rem;
+    border-radius: 7px;
+    border: 1px solid var(--line-bright);
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--fg);
+    background: var(--bg-raised);
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover { border-color: var(--fg-faint); background: #171b21; }
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #07110c;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #93dfb2; border-color: #93dfb2; }
+
+  /* ---------- terminal ---------- */
+
+  .term {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg-sunken);
+    overflow: hidden;
+    box-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.9);
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-raised);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line-bright); }
+  .term-title {
+    margin-left: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+  }
+  .term pre {
+    margin: 0;
+    padding: 1.15rem 1.25rem;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    line-height: 1.72;
+    color: var(--fg-dim);
+    tab-size: 2;
+  }
+  .term pre .p { color: var(--accent); }
+  .term pre .c { color: var(--fg-faint); }
+  .term pre .hi { color: var(--fg); }
+  .term pre .med { color: var(--warn); }
+  .term pre .crit { color: var(--crit); }
+  .term pre .ok { color: var(--accent); }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: clamp(3.5rem, 9vh, 6rem); border-bottom: 1px solid var(--line); }
+
+  h2 {
+    margin: 0 0 0.9rem;
+    font-size: clamp(1.45rem, 3.4vw, 1.95rem);
+    letter-spacing: -0.025em;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  h3 { margin: 0 0 0.45rem; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+  .section-lede { margin: 0 0 2.5rem; max-width: var(--measure); color: var(--fg-dim); }
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  .grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
+  .cell { background: var(--bg-raised); padding: 1.4rem 1.35rem; }
+  .cell p { font-size: 0.9rem; color: var(--fg-dim); margin: 0; }
+  .cell .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.7rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  th, td { text-align: left; padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { background: var(--bg-raised); font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--fg-faint); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { white-space: nowrap; font-weight: 500; }
+  td.detail { color: var(--fg-dim); }
+
+  .steps { counter-reset: step; display: grid; gap: 1.6rem; margin-top: 2rem; }
+  .step { display: grid; grid-template-columns: 2rem 1fr; gap: 1rem; align-items: start; }
+  .step::before {
+    counter-increment: step;
+    content: counter(step);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    border: 1px solid var(--line-bright);
+    border-radius: 50%;
+    width: 2rem; height: 2rem;
+    display: grid; place-items: center;
+  }
+  .step p { font-size: 0.93rem; color: var(--fg-dim); }
+  .step pre {
+    margin: 0.7rem 0 0;
+    padding: 0.75rem 0.95rem;
+    background: var(--bg-sunken);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow-x: auto;
+    font-size: 0.79rem;
+    color: var(--fg);
+  }
+  .step pre .p { color: var(--accent); }
+
+  .note {
+    border-left: 2px solid var(--line-bright);
+    padding-left: 1.15rem;
+    color: var(--fg-dim);
+    font-size: 0.93rem;
+    max-width: var(--measure);
+  }
+  .note strong { color: var(--fg); font-weight: 600; }
+
+  footer { padding-block: 2.5rem 3.5rem; color: var(--fg-faint); font-size: 0.85rem; }
+  footer .row { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: space-between; align-items: baseline; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 1.4rem; }
+  footer a { color: var(--fg-dim); text-decoration: none; }
+  footer a:hover { color: var(--fg); }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+  }
+  .status .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap topbar">
+    <a class="brand" href="/agent-safe-webscan/">agentsafe<b>/</b>webscan</a>
+    <nav>
+      <a href="#boundary" class="opt">Trust boundary</a>
+      <a href="#checks" class="opt">Checks</a>
+      <a href="#mcp">MCP</a>
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan">GitHub</a>
+    </nav>
+  </div>
+
+  <div class="wrap hero-body">
+    <div>
+      <p class="eyebrow">Passive-first web security scanning</p>
+      <h1>A web scanner that treats the page as <span class="muted">untrusted input.</span></h1>
+      <p class="lede">
+        AgentSafe WebScan turns a public URL into a compact, evidence-based security report —
+        through a CLI, SARIF 2.1.0 for code scanning, and MCP for coding agents. The scanner is
+        deterministic, needs no LLM, and never forwards raw page content into a model's context.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#start">Get started</a>
+        <a class="btn" href="https://github.com/keepiteinfach/agent-safe-webscan">View source</a>
+      </div>
+    </div>
+
+    <div class="term">
+      <div class="term-bar">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="term-title">agentwebscan https://example.com</span>
+      </div>
+<pre><span class="c">AgentSafe WebScan 0.1.0 · passive</span>
+<span class="hi">https://example.com/</span> · HTTP 200 · score <span class="hi">62/100</span> (D)
+
+<span class="med">[MEDIUM]</span> <span class="hi">Content Security Policy is missing</span>
+  Content-Security-Policy header not present
+  CWE-1021
+  Fix: Deploy a restrictive CSP and iterate with report-only mode first.
+
+<span class="med">[MEDIUM]</span> <span class="hi">Potential hidden instructions for AI agents</span>
+  2 hidden segment(s) matched: do not tell user, assistant role;
+  <span class="ok">content withheld</span>, hashes: 59bc47934ec7ef56, d4f45e4dada56e42
+  OWASP LLM01:2025
+
+<span class="c">Passive mode is the default. No exploit payloads, no credential
+attacks, no brute force, no port scans, no subdomain enumeration.</span></pre>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section id="boundary">
+  <div class="wrap">
+    <h2>The different part: the scanner is an agent trust boundary</h2>
+    <p class="section-lede">
+      Once a scanner is exposed over MCP, website content can flow straight into a coding agent.
+      That is an indirect prompt-injection path classic web scanners were never designed around.
+      Two controls exist specifically for it.
+    </p>
+
+    <div class="grid grid-2">
+      <div class="cell">
+        <span class="tag">Quarantined evidence</span>
+        <h3>Suspicious text is fingerprinted, not quoted</h3>
+        <p>
+          Hidden instructions aimed at agents are classified and SHA-256 fingerprinted. The matched
+          text itself never leaves the scanner. Potential <code>.env</code> and debug-log bodies are
+          hashed in memory and omitted from findings entirely.
+        </p>
+      </div>
+      <div class="cell">
+        <span class="tag">Structured findings</span>
+        <h3>Bounded fields instead of a page dump</h3>
+        <p>
+          Agents receive <code>severity</code>, <code>confidence</code>, <code>standard</code>,
+          <code>evidence</code> and <code>remediation</code> — plus read-only, idempotent and
+          open-world tool annotations, so the agent knows what the call does before making it.
+        </p>
+      </div>
+      <div class="cell">
+        <span class="tag">Honest coverage</span>
+        <h3>"Could not check" is not "clean"</h3>
+        <p>
+          A probe that never reached the target is reported as incomplete, with the reason. A
+          transient connection reset during a scan can't quietly turn a critical exposure check
+          into a clean bill of health.
+        </p>
+      </div>
+      <div class="cell">
+        <span class="tag">Safe fetch</span>
+        <h3>SSRF guard with DNS pinning</h3>
+        <p>
+          Public HTTP(S) targets only. Private and reserved ranges are refused, validated DNS
+          answers are pinned for the actual socket to close the rebinding gap, every redirect hop
+          is re-validated, and one timeout budget covers the whole call.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="checks">
+  <div class="wrap">
+    <h2>What it looks at</h2>
+    <p class="section-lede">
+      Deliberately narrower than a pentest suite. Findings keep <strong>severity</strong> separate
+      from <strong>confidence</strong>, so a heuristic signal is never presented as a confirmed
+      vulnerability.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Area</th><th>Examples</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Headers</td><td class="detail">HSTS, CSP strength, clickjacking protection, nosniff, Referrer-Policy, version disclosure</td></tr>
+          <tr><td>Cookies</td><td class="detail">Secure, HttpOnly on session-like cookies, SameSite</td></tr>
+          <tr><td>CORS</td><td class="detail">Arbitrary origin reflection, credentialed reflection, misleading wildcards</td></tr>
+          <tr><td>Frontend</td><td class="detail">Mixed content, outdated jQuery, third-party scripts without SRI</td></tr>
+          <tr><td>Agent security</td><td class="detail">Hidden and comment-based prompt-injection heuristics, Unicode obfuscation controls</td></tr>
+          <tr><td>Exposure <span style="color:var(--fg-faint)">(opt-in)</span></td><td class="detail"><code>.git/HEAD</code>, <code>.env</code>, <code>phpinfo.php</code>, Apache <code>server-status</code>, WordPress <code>debug.log</code></td></tr>
+          <tr><td>Hygiene</td><td class="detail"><code>security.txt</code>, lightweight technology fingerprinting</td></tr>
+          <tr><td>AI surface</td><td class="detail"><code>llms.txt</code> presence and MCP references found in the page</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note" style="margin-top:2rem">
+      <strong>Not in scope, by design.</strong> No exploit chains, no credential attacks, no brute
+      force, no port scanning, no subdomain enumeration. Exposure probes are a small fixed set of
+      GET requests behind <code>--authorized</code>, for systems you own or are explicitly
+      permitted to test.
+    </p>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Get started</h2>
+    <p class="section-lede">Requires Node.js 22 or newer. No API key, no account, no remote service.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div>
+          <h3>Clone and install</h3>
+          <pre><span class="p">git</span> clone https://github.com/keepiteinfach/agent-safe-webscan
+<span class="p">cd</span> agent-safe-webscan &amp;&amp; <span class="p">npm</span> install</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Scan a site</h3>
+          <pre><span class="p">npm</span> run scan -- https://example.com</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div>
+          <h3>Wire it into CI</h3>
+          <p>SARIF 2.1.0 goes straight into GitHub code scanning, and the exit code can gate a build.</p>
+          <pre><span class="p">npm</span> run scan -- https://example.com --format sarif &gt; report.sarif
+<span class="p">npm</span> run scan -- https://example.com --fail-on high</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="mcp">
+  <div class="wrap">
+    <h2>Use it from an agent</h2>
+    <p class="section-lede">
+      The MCP server exposes two tools over stdio: <code>scan_site</code> runs a bounded scan in
+      passive or authorized mode, and <code>scanner_policy</code> returns the scanner's boundaries
+      without touching the network — so an agent can check what it is about to invoke.
+    </p>
+
+    <div class="grid grid-2" style="margin-bottom:2rem">
+      <div class="cell">
+        <span class="tag">Register</span>
+        <pre style="margin:0;overflow-x:auto;font-size:0.79rem;color:var(--fg)">codex mcp add agent-safe-webscan \
+  -- node /abs/path/agent-safe-webscan/src/mcp.js</pre>
+      </div>
+      <div class="cell">
+        <span class="tag">Then ask</span>
+        <p style="color:var(--fg)">
+          “Scan https://example.com in passive mode and turn only the structured findings into a
+          prioritized remediation plan.”
+        </p>
+      </div>
+    </div>
+
+    <p class="note">
+      <strong>Why the policy tool exists.</strong> An agent deciding whether to call a scanner
+      should be able to read the scanner's own limits first — default mode, what is never attempted,
+      how untrusted evidence is handled — rather than inferring them from a description.
+    </p>
+  </div>
+</section>
+
+<section id="status">
+  <div class="wrap">
+    <h2>Project status</h2>
+    <p class="section-lede">
+      <span class="status"><span class="pip"></span> v0.1.0 · early</span>
+    </p>
+    <p style="max-width:var(--measure);color:var(--fg-dim)">
+      This is a young project and is presented as one. It has a full test suite, CI on Node 22 and
+      24 across Linux and Windows, a written threat model, and a stable report contract — but no
+      adoption numbers to quote yet, and no npm release. The roadmap is
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan/blob/main/docs/roadmap.md">in the repository</a>;
+      baseline diffing, a GitHub Action, and a streamable HTTP transport are next.
+    </p>
+    <p style="max-width:var(--measure);color:var(--fg-dim)">
+      Rule contributions are welcome. New rules should be bounded, low-noise, carry a stable id,
+      return no secrets, and ship with a regression test — see
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan/blob/main/CONTRIBUTING.md">CONTRIBUTING</a>.
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap row">
+    <div>MIT licensed · built by <a href="https://deinwebscan.de">deinwebscan.de</a></div>
+    <nav>
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan">Repository</a>
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan/blob/main/docs/threat-model.md">Threat model</a>
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan/blob/main/docs/architecture.md">Architecture</a>
+      <a href="https://github.com/keepiteinfach/agent-safe-webscan/blob/main/SECURITY.md">Security policy</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

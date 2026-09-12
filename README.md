@@ -1,6 +1,12 @@
 # AgentSafe WebScan
 
+[![ci](https://github.com/keepiteinfach/agent-safe-webscan/actions/workflows/ci.yml/badge.svg)](https://github.com/keepiteinfach/agent-safe-webscan/actions/workflows/ci.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen.svg)](package.json)
+
 **Agent-safe, passive-first website security scanning for humans, CI, and coding agents.**
+
+📄 [Project page](https://keepiteinfach.github.io/agent-safe-webscan/)
 
 AgentSafe WebScan turns a public URL into a compact, evidence-based security report and exposes the same deterministic scanner through a CLI, JSON, SARIF 2.1.0, and MCP. It is intentionally narrower than a pentest suite: no exploit chains, no credential attacks, no port scanning, no subdomain brute force.
 

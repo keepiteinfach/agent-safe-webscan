@@ -1,0 +1,6 @@
+# The repository is consumed by Node on Linux, macOS and Windows, and
+# examples/*.sarif is asserted byte-for-byte by test/examples.test.js.
+# Without this, a Windows checkout rewrites LF to CRLF and that test fails.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
