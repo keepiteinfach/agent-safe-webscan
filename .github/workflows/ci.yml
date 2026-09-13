@@ -1,11 +1,25 @@
 name: ci
 on:
   push:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
 permissions:
   contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
